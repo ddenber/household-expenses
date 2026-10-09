@@ -1,0 +1,20 @@
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+storage/
+apps/api/storage/
+.pytest_cache/
+test-results/
+playwright-report/
+*.log
+.pids/
+.fixtures/
+.next-build/
+
+# Redis data
+dump.rdb
