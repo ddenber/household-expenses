@@ -32,5 +32,6 @@ Ledger operations require `idempotency_key` in the body.
 | GET `/exports/expenses` · `/exports/transactions` (`format=csv\|xlsx`) | admin/auditor | exports |
 | GET `/audit` | admin/auditor | append-only audit log |
 | GET `/api/health` | public | liveness |
+| GET `/api/ready` | public | database readiness (`503` when unavailable) |
 
 Notable error codes: `insufficient_funds`, `period_closed`, `invalid_transition`, `self_approval`, `idempotency_conflict`, `needs_confirmation`, `refund_exceeds_original`, `too_many_decimals`, `csrf`, `rate_limited`, `locked`.

@@ -2,13 +2,18 @@
 
 Pyramid: DB/ledger invariants (pytest, real PostgreSQL) > API behaviour/RBAC (pytest) > frontend units (vitest) > end-to-end (Playwright against the running stack with real worker + real Tesseract).
 
+`.github/workflows/checks.yml` runs the API suite against a disposable PostgreSQL service and runs web unit, type and lint checks on push/PR. This workflow was added here but has not run in GitHub in this delivery. Playwright remains a separate manual check because it needs the full stack and worker.
+
 ## Run
 ```bash
-cd apps/api && . .venv/bin/activate && python -m pytest -q          # needs PostgreSQL db `hem_test` (see tests/conftest.py)
+cd apps/api && . .venv/bin/activate
+export TEST_DATABASE_URL='postgresql+psycopg://hem:...@localhost:5432/hem_test'
+export HEM_ALLOW_TEST_DB_RESET=1
+python -m pytest -q
 cd apps/web && npm test && npm run typecheck && npx eslint src
 cd apps/web && npm run e2e                                          # needs api :8431, worker, web :3417, bootstrap super admin
 ```
-`TEST_DATABASE_URL` overrides the test DB. The pytest session drops and recreates the `public` schema of the test DB and runs Alembic migrations (so migrations are exercised on every run).
+The test suite requires an explicit `TEST_DATABASE_URL` whose database name contains `test`, plus `HEM_ALLOW_TEST_DB_RESET=1`. On Windows PowerShell use `$env:TEST_DATABASE_URL='...'` and `$env:HEM_ALLOW_TEST_DB_RESET='1'`. The session **drops and recreates the `public` schema** of that database and runs Alembic migrations. Use a disposable, isolated PostgreSQL database only.
 
 ## Coverage map (financial invariants)
 | Rule | Test |

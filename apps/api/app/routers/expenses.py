@@ -147,7 +147,7 @@ async def upload(eid: uuid.UUID, response: Response, file: UploadFile = File(...
 
 
 @router.post("/expenses/{eid}/ocr/retry", status_code=202)
-def ocr_retry(eid: uuid.UUID, auth: Auth = Depends(current_auth), db: Session = Depends(get_db)):
+def ocr_retry(eid: uuid.UUID, auth: Auth = Depends(require("expense.create_own")), db: Session = Depends(get_db)):
     e = svc.get_expense(db, auth, eid)
     if e.status not in svc.EDITABLE:
         raise Invalid("Not editable", code="not_editable")

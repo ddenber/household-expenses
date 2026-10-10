@@ -32,7 +32,10 @@ Demo logins (only after `seed-demo`): `admin@demo.local`, `punonjes1@demo.local`
 
 ## Tests
 ```bash
-cd apps/api && python -m pytest -q         # 52 backend tests (ledger invariants, RBAC, reconciliation, OCR)
+cd apps/api
+export TEST_DATABASE_URL='postgresql+psycopg://hem:...@localhost:5432/hem_test'
+export HEM_ALLOW_TEST_DB_RESET=1
+python -m pytest -q                         # requires a disposable PostgreSQL test database
 cd apps/web && npm test && npm run e2e     # 11 unit tests, 10 Playwright tests (needs the stack running)
 ```
 

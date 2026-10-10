@@ -47,4 +47,6 @@ def get_settings() -> Settings:
     s = Settings()
     if s.app_env == "production" and s.secret_key == DEFAULT_SECRET:
         raise RuntimeError("SECRET_KEY must be set in production")
+    if s.app_env == "production" and not s.cookie_secure:
+        raise RuntimeError("COOKIE_SECURE must be true in production")
     return s

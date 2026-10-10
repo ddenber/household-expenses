@@ -3,9 +3,11 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
 from .config import get_settings
+from .db import engine
 from .errors import AppError
 from .routers import admin, auth, expenses, ledger, reconciliation, reports
 
@@ -46,4 +48,15 @@ async def security_headers(request: Request, call_next):
 
 @app.get("/api/health")
 def health():
+    return {"status": "ok"}
+
+
+@app.get("/api/ready")
+def ready():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        logging.getLogger("hem").warning("readiness check failed")
+        return JSONResponse(status_code=503, content={"status": "unavailable"})
     return {"status": "ok"}

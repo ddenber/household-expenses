@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 
 os.environ.update({
@@ -28,6 +29,14 @@ PW = "correct-horse-battery"
 
 @pytest.fixture(scope="session", autouse=True)
 def migrated():
+    # This fixture destroys the public schema. Require an explicitly selected test DB.
+    test_url = os.environ.get("TEST_DATABASE_URL")
+    if not test_url or os.environ.get("HEM_ALLOW_TEST_DB_RESET") != "1":
+        raise RuntimeError("Set TEST_DATABASE_URL and HEM_ALLOW_TEST_DB_RESET=1 for an isolated test database")
+    from sqlalchemy.engine import make_url
+    database = make_url(test_url).database or ""
+    if not re.search(r"(^test_|_test$|_test_)", database):
+        raise RuntimeError("TEST_DATABASE_URL database name must contain a test marker")
     with engine.begin() as c:
         c.execute(text("DROP SCHEMA public CASCADE; CREATE SCHEMA public;"))
     command.upgrade(Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini")), "head")

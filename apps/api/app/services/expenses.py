@@ -81,7 +81,7 @@ def _validate_fields(db, auth, e: Expense, data: dict):
 
 def _latest_extraction(db, expense_id):
     rows = db.scalars(select(OcrResult).where(OcrResult.expense_id == expense_id, OcrResult.status == "done")
-                      .order_by(OcrResult.created_at)).all()
+                      .order_by(OcrResult.created_at.desc(), OcrResult.id.desc())).all()
     merged: dict = {}
     for r in rows:
         for k in ("supplier", "date", "total"):

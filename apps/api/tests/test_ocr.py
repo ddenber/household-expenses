@@ -65,6 +65,29 @@ def test_low_confidence_requires_confirmation_and_corrections_are_stored(w, ea):
     assert [(x.field, x.old_value, x.new_value) for x in c] == [("total", "12.50", "13.00")]
 
 
+def test_correction_uses_latest_successful_ocr_result(w, ea):
+    from datetime import datetime, timedelta, timezone
+    from uuid import UUID
+
+    from app.db import SessionLocal
+    from app.models import OcrCorrection, OcrResult
+
+    eid = ea.post("/expenses", {"client_ref": "latest-ocr"}).json()["id"]
+    document_id = upload(ea, eid).json()["document_id"]
+    with SessionLocal() as db:
+        db.add(OcrResult(
+            document_id=UUID(document_id), expense_id=UUID(eid), provider="simulated",
+            provider_real=False, status="done", extraction={"total": {"value": "14.00"}},
+            created_at=datetime.now(timezone.utc) + timedelta(seconds=1),
+        ))
+        db.commit()
+
+    assert ea.patch(f"/expenses/{eid}", {"total": "15.00"}).status_code == 200
+    with SessionLocal() as db:
+        corrections = db.query(OcrCorrection).filter_by(expense_id=UUID(eid), field="total").all()
+        assert [(c.old_value, c.new_value) for c in corrections] == [("14.00", "15.00")]
+
+
 def test_failed_ocr_keeps_document_and_allows_manual_entry(w, ea, monkeypatch):
     from app.services.ocr import providers
 

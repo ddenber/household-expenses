@@ -31,11 +31,13 @@ def test_employee_blocked_from_admin_endpoints(w, ea):
     assert ea.post("/expenses", {"user_id": str(w.b.id), "total": "5"}).status_code == 403
 
 
-def test_auditor_is_read_only(w, admin, auditor):
+def test_auditor_is_read_only(w, admin, auditor, ea):
     assert auditor.get("/ledger/transactions").status_code == 200
     assert auditor.get("/audit").status_code == 200
     assert auditor.post("/ledger/funding", {"idempotency_key": "x", "date": "2026-03-01", "amount": "5", "bank_id": str(w.bank_id)}).status_code == 403
     assert auditor.post("/expenses", {"total": "5"}).status_code == 403
+    eid = mk_expense(ea, w, "5", submit=False)
+    assert auditor.post(f"/expenses/{eid}/ocr/retry").status_code == 403
 
 
 def test_financial_admin_cannot_create_privileged_users(w, admin):
@@ -55,6 +57,22 @@ def test_unauthenticated_and_csrf(w):
     assert r.status_code == 403 and r.json()["error"]["code"] == "csrf"
     r = a.c.post("/api/v1/expenses", json={"total": "5"}, headers={"X-CSRF-Token": "wrong"})
     assert r.status_code == 403
+
+
+def test_readiness_reports_database_failure(w, monkeypatch):
+    import app.main
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app.main.app)
+    assert client.get("/api/ready").status_code == 200
+
+    def unavailable():
+        raise OSError("synthetic database outage")
+
+    monkeypatch.setattr(app.main.engine, "connect", unavailable)
+    response = client.get("/api/ready")
+    assert response.status_code == 503
+    assert response.json() == {"status": "unavailable"}
 
 
 def test_cookie_flags_and_logout(w):
